@@ -1,4 +1,4 @@
-package com.json.error;
+package com.rtsp.error;
 
 public class CommonExceptionResponse {
     private int code;

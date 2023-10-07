@@ -1,4 +1,4 @@
-package com.json.error;
+package com.rtsp.error;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
