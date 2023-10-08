@@ -1,6 +1,8 @@
 import './App.css'
 
 import styled, {css} from "styled-components";
+import StreamingRtsp from "./components/StreamingRtsp";
+import React from "react";
 
 const AppBlock = styled.div`
   width: 512px;
@@ -13,7 +15,7 @@ const AppBlock = styled.div`
 const App: React.FC = () => {
     <div>
         <AppBlock>
-
+            <StreamingRtsp/>
         </AppBlock>
     </div>
 }
