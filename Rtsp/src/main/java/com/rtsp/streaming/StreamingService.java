@@ -2,8 +2,10 @@ package com.rtsp.streaming;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -50,10 +52,12 @@ public class StreamingService {
         return outputFilePathOnLinux;
     }
 
-    public String convertToHlsOnWindows() {
-        String outputFolderOnWindows = String.valueOf(new ClassPathResource("./rtsp/")); // hls 폴더로 변경
+    public String convertToHlsOnWindows() throws IOException {
+        Resource resource = new ClassPathResource("rtsp/");
+        File outputFolderOnWindows = resource.getFile();
+        log.info(outputFolderOnWindows.getAbsolutePath());
         String outputFileNameOnWindows = "stream_" + timestamp + ".m3u8"; // 파일 이름에 타임스탬프 포함
-        String outputFilePathOnWindows = outputFolderOnWindows + outputFileNameOnWindows;
+        String outputFilePathOnWindows = outputFolderOnWindows.getAbsolutePath() + outputFileNameOnWindows;
 
         try {
             /**
