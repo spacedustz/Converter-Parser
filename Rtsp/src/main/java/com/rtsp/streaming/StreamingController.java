@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/rtsp")
 @RequiredArgsConstructor
@@ -19,7 +21,7 @@ public class StreamingController {
     }
 
     @GetMapping("/windows")
-    public ResponseEntity<StreamingDto> rtspToHlsOnWindows() {
+    public ResponseEntity<StreamingDto> rtspToHlsOnWindows() throws IOException {
         return new ResponseEntity<>(StreamingDto.mapping(streamingService.convertToHlsOnWindows()), HttpStatus.OK);
     }
 }
