@@ -19,33 +19,33 @@
 **CSV의 식별자인 frame_id는 JPA에서 Auto Increment로 숫자가 자동으로 들어가기 때문에 생성자에서 빼줍니다.**
 
 ```java
-@Entity @Getter  
-@NoArgsConstructor(access = AccessLevel.PROTECTED)  
-public class Frame {  
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)  
-    @Column(name = "frame_id")  
-    private Long id;  
-    private int count;  
-    private Float frameTime;  
-    private String instanceId;  
-  
-    @Column(nullable = true)  
-    private LocalDateTime systemDate;  
-  
-    @Column(nullable = true)  
-    private Long systemTimestamp;  
-  
-    private Frame(int count, Float frameTime, String instanceId, LocalDateTime systemDate, Long systemTimestamp) {  
-        this.count = count;  
-        this.frameTime = frameTime;  
-        this.instanceId = instanceId;  
-        this.systemDate = systemDate;  
-        this.systemTimestamp = systemTimestamp;  
-    }  
-  
-    public static Frame createOf(int count, Float frameTime, String instanceId, LocalDateTime systemDate, Long systemTimestamp) {  
-        return new Frame(count, frameTime, instanceId, systemDate, systemTimestamp);  
-    }  
+@Entity @Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Frame {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "frame_id")
+    private Long id;
+    private int count;
+    private Float frameTime;
+    private String instanceId;
+
+    @Column(nullable = true)
+    private LocalDateTime systemDate;
+
+    @Column(nullable = true)
+    private Long systemTimestamp;
+
+    private Frame(int count, Float frameTime, String instanceId, LocalDateTime systemDate, Long systemTimestamp) {
+        this.count = count;
+        this.frameTime = frameTime;
+        this.instanceId = instanceId;
+        this.systemDate = systemDate;
+        this.systemTimestamp = systemTimestamp;
+    }
+
+    public static Frame createOf(int count, Float frameTime, String instanceId, LocalDateTime systemDate, Long systemTimestamp) {
+        return new Frame(count, frameTime, instanceId, systemDate, systemTimestamp);
+    }
 }
 ```
 
@@ -83,9 +83,10 @@ public class Parser {
      * 변환, 리스트 저장 실패 시 트랜잭션 롤백  
      */  
     @Transactional  
-    public void parseCsv() {  
+    public List<FrameDTO.Response> parseCsv() {  
         // 임시로 로컬에서 CSV를 읽어옴  
         Resource resource = new ClassPathResource("sample/test.csv");  
+        log.info("파일 불러오기 - {}", resource.getFilename());  
   
         try {  
             List<String> lines = Files.readAllLines(Paths.get(resource.getFile().getPath()), StandardCharsets.UTF_8);  
@@ -146,6 +147,28 @@ public class Parser {
             log.error("===== 데이터 파싱 실패 =====");  
             throw new CommonException("DATA-001", HttpStatus.INTERNAL_SERVER_ERROR);  
         }  
+  
+        return frameRepository.findAll().stream().map(FrameDTO.Response::fromEntity).toList();  
+    }  
+}
+```
+
+<br>
+
+> 😯 **FrameController**
+
+위에서 CSV를 파싱한 결과를 호출하는 Rest API 1개를 만들어 줍니다.
+
+```java
+@RestController  
+@RequiredArgsConstructor  
+@RequestMapping("/csv")  
+public class FrameController {  
+    private final Parser parser;  
+  
+    @GetMapping  
+    public ResponseEntity<List<FrameDTO.Response>> getFrames() {  
+        return ResponseEntity.ok().body(parser.parseCsv());  
     }  
 }
 ```
