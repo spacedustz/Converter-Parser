@@ -80,6 +80,6 @@ public class StreamingService {
         }
 
         log.info("RTSP 변환 성공");
-        return outputFilePathOnLinux;
+        return outputFilePathOnWindows;
     }
 }
