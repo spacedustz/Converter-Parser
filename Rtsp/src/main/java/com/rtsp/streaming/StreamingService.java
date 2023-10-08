@@ -1,6 +1,7 @@
 package com.rtsp.streaming;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -12,14 +13,12 @@ import java.util.Date;
 public class StreamingService {
     static String timestamp = new SimpleDateFormat("yyyy-MM-dd-HH-mm").format(new Date());
     static String rtspUrl = "rtsp://210.99.70.120:1935/live/cctv001.stream";
-    String outputFolderOnLinux = "/root/rtsp"; // hls 폴더로 변경
-    String outputFileNameOnLinux = "stream_" + timestamp + ".m3u8"; // 파일 이름에 타임스탬프 포함
-    String outputFilePathOnLinux = outputFolderOnLinux + outputFileNameOnLinux;
-    String outputFolderOnWindows = "D:/Data/FFmpeg"; // hls 폴더로 변경
-    String outputFileNameOnWindows = "stream_" + timestamp + ".m3u8"; // 파일 이름에 타임스탬프 포함
-    String outputFilePathOnWindows = outputFolderOnWindows + outputFileNameOnWindows;
 
     public String convertToHlsOnLinux() {
+        String outputFolderOnLinux = "/root/rtsp"; // hls 폴더로 변경
+        String outputFileNameOnLinux = "stream_" + timestamp + ".m3u8"; // 파일 이름에 타임스탬프 포함
+        String outputFilePathOnLinux = outputFolderOnLinux + outputFileNameOnLinux;
+
         try {
             /**
              * -i 옵션 : 입력 스트림 지정
@@ -52,6 +51,10 @@ public class StreamingService {
     }
 
     public String convertToHlsOnWindows() {
+        String outputFolderOnWindows = String.valueOf(new ClassPathResource("./rtsp/")); // hls 폴더로 변경
+        String outputFileNameOnWindows = "stream_" + timestamp + ".m3u8"; // 파일 이름에 타임스탬프 포함
+        String outputFilePathOnWindows = outputFolderOnWindows + outputFileNameOnWindows;
+
         try {
             /**
              * -i 옵션 : 입력 스트림 지정
