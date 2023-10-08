@@ -13,11 +13,14 @@ const AppBlock = styled.div`
 `;
 
 const App: React.FC = () => {
-    <div>
-        <AppBlock>
-            <StreamingRtsp/>
-        </AppBlock>
-    </div>
+
+    return (
+        <div>
+            <AppBlock>
+                <StreamingRtsp/>
+            </AppBlock>
+        </div>
+    )
 }
 
 export default App
