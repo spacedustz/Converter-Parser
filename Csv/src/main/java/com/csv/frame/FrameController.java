@@ -12,11 +12,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/csv")
 public class FrameController {
-
-    private final FrameService frameService;
+    private final Parser parser;
 
     @GetMapping
     public ResponseEntity<List<FrameDTO.Response>> getFrames() {
-        return ResponseEntity.ok().body(frameService.getFrames());
+        return ResponseEntity.ok().body(parser.parseCsv());
     }
 }
