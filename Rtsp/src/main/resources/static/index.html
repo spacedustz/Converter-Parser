@@ -9,8 +9,8 @@
         let video = null;
 
         /* 샘플 m3u8 url */
-        let videoSrc = fetchUrl('http://localhost:5002/rtsp/linux');
-        console.log('HLS Url = ', videoSrc.url);
+        let videoSrc = fetchUrl('http://localhost:5002/rtsp/windows').then(data => data.url);
+        console.log('HLS Url = ', videoSrc);
 
         /* DOMContentLoaded 로드를 통해 video Element 담기*/
         window.addEventListener("DOMContentLoaded", () => {
@@ -41,7 +41,18 @@
 
         /* Rest API에 요청 전송 */
         function fetchUrl(url, method = 'GET') {
-            return window.fetch(url, { method }).then(JSON.parse(data));
+            return window.fetch(url, { method })
+                .then(response => {
+                    // 응답 데이터를 JSON으로 파싱하여 반환
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json(); // JSON 파싱
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    throw error; // 예외 다시 던지기
+                });
         }
     </script>
 </head>
