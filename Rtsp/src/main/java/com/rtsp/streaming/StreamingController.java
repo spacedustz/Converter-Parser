@@ -20,6 +20,6 @@ public class StreamingController {
 
     @GetMapping("/windows")
     public ResponseEntity<StreamingDto> rtspToHlsOnWindows() {
-        return new ResponseEntity<>(StreamingDto.mapping(streamingService.convertToHlsOnLinux()), HttpStatus.OK);
+        return new ResponseEntity<>(StreamingDto.mapping(streamingService.convertToHlsOnWindows()), HttpStatus.OK);
     }
 }
