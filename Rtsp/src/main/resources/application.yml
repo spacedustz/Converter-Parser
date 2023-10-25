@@ -28,3 +28,37 @@ logging:
   level:
     org:
       hibernate: info
+
+# Task
+task:
+  executor:
+    core:
+      pool:
+        size: 15
+    max:
+      pool:
+        size: 30
+    queue:
+      capacity: 60
+
+# HLS
+hls:
+  file:
+    path: E:\Data\HLS\
+
+# FFmpeg
+ffmpeg:
+  check:
+    interval:
+      millis: 10000
+  option:
+    hls:
+      time: 2
+      list:
+        size: 3
+      flags: delete_segments
+    start:
+      number: 1
+
+api:
+  key: abc
