@@ -1,6 +1,6 @@
 import './App.css'
 
-import styled, {css} from "styled-components";
+import styled from "styled-components";
 import StreamingRtsp from "./components/StreamingRtsp";
 import React from "react";
 
