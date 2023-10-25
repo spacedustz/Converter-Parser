@@ -1,57 +1,39 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef} from 'react';
 import Hls from 'hls.js';
 import {fetchUrl} from "../store/restapi"; // restapi.ts 파일을 import
 
 const StreamingRtsp: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const [hlsUrl, setHlsUrl] = useState<string>('');
+    const videoSrc = fetchUrl();
+    const hls = new Hls();
 
-    // Backend에서 HLS URL GET
-    const fetchHlsUrl = async () => {
-        try {
-            const url = await fetchUrl(); // fetchUrl 함수를 사용하여 HLS URL을 가져옴
-            if (url) {
-                setHlsUrl(url); // HLS URL을 상태 변수에 설정
-            } else {
-                console.error('HLS URL이 없습니다.');
-            }
-        } catch (error) {
-            console.error('Failed to fetch HLS URL:', error);
-        }
-    };
-
+    // Life Cycle Hooks
     useEffect(() => {
-        fetchHlsUrl(); // HLS URL을 가져옴
+        loadHlsStream();
     }, []);
 
-    useEffect(() => {
-        if (videoRef.current && hlsUrl) {
-            loadHlsStream(); // HLS 스트림을 로드
-        }
-    }, [hlsUrl]);
-
     const loadHlsStream = () => {
-        let hls = null;
-        if (Hls.isSupported()) {
-            hls = new Hls();
-            hls.loadSource(hlsUrl);
-            hls.attachMedia(videoRef.current!);
 
-            hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                videoRef.current!.play();
+        if (Hls.isSupported()) {
+
+            if (videoRef.current) {
+                hls.loadSource(videoSrc);
+                hls.attachMedia(videoRef.current!);
+                hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                    videoRef.current.play();
+                });
+            }
+        } else if (videoRef.current && videoRef.current?.canPlayType('application/vnd.apple.mpegurl')) {
+            videoRef.current.src = videoSrc;
+            videoRef.current?.addEventListener('loadedmetadata', function () {
+                videoRef.current?.play();
             });
         }
-
-        return () => {
-            if (hls) {
-                hls.destroy();
-            }
-        };
     };
 
     return (
         <div>
-            <video ref={videoRef} controls playsInline autoPlay/>
+            <video ref={videoRef} width={640} height={360} controls/>
         </div>
     );
 };
