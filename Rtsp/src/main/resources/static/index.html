@@ -1,62 +1,61 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Testing HLS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS Streaming</title>
+    <!-- hls.js 라이브러리 추가 -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script lang="javascript">
-        /* video Element */
-        let video = null;
-
-        /* 샘플 m3u8 url */
-        let videoSrc = fetchUrl('http://localhost:5002/rtsp/windows').then(data => data.url);
-        console.log('HLS Url = ', videoSrc);
-
-        /* DOMContentLoaded 로드를 통해 video Element 담기*/
-        window.addEventListener("DOMContentLoaded", () => {
-            initVideo();
-            initHls();
-        })
-
-        /* initVideo */
-        const initVideo = () => {
-            video = document.querySelector('#video')
-        }
-
-        /* HLS 초기화 */
-        const initHls = () => {
-            if (Hls.isSupported()) {
-                hls = new Hls({
-                    autoStartLoad: false,
-                });
-                hls.loadSource(videoSrc.url);
-                hls.attachMedia(video);
-                hls.startLoad();
-            }
-            /* ios/safari 같은 경우에 hls가 built-in 되어있다.*/
-            else {
-                video.src = videoSrc.url;
-            }
-        }
-
-        /* Rest API에 요청 전송 */
-        function fetchUrl(url, method = 'GET') {
-            return window.fetch(url, { method })
-                .then(response => {
-                    // 응답 데이터를 JSON으로 파싱하여 반환
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json(); // JSON 파싱
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                    throw error; // 예외 다시 던지기
-                });
-        }
-    </script>
 </head>
 <body>
-<video id="video" controls playsinline autoplay></video>
+<video id="video1" width="640" height="360" controls></video>
+<video id="video2" width="640" height="360" controls></video>
+<video id="video3" width="640" height="360" controls></video>
+<video id="video4" width="640" height="360" controls></video>
+<video id="video5" width="640" height="360" controls></video>
+<video id="video6" width="640" height="360" controls></video>
+<video id="video7" width="640" height="360" controls></video>
+<video id="video8" width="640" height="360" controls></video>
+<video id="video9" width="640" height="360" controls></video>
+<script>
+    // 함수로 스트리밍 로직 분리
+    function startStreaming(videoElement, videoSource) {
+        if (Hls.isSupported()) {
+            var hls = new Hls();
+            hls.loadSource(videoSource);
+            hls.attachMedia(videoElement);
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                videoElement.play();
+            });
+        }
+        // 브라우저가 기본적으로 HLS를 지원하는 경우
+        else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+            videoElement.src = videoSource;
+            videoElement.addEventListener('loadedmetadata', function () {
+                videoElement.play();
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // 비디오 요소와 소스 배열
+        var videos = [
+            { element: document.getElementById('video1'), source: 'http://127.0.0.1:5002/videos/1/output.m3u8' },
+            { element: document.getElementById('video2'), source: 'http://127.0.0.1:5002/videos/2/output.m3u8' },
+            { element: document.getElementById('video3'), source: 'http://127.0.0.1:5002/videos/3/output.m3u8' },
+            { element: document.getElementById('video4'), source: 'http://127.0.0.1:5002/videos/4/output.m3u8' },
+            { element: document.getElementById('video5'), source: 'http://127.0.0.1:5002/videos/5/output.m3u8' },
+            { element: document.getElementById('video6'), source: 'http://127.0.0.1:5002/videos/6/output.m3u8' },
+            { element: document.getElementById('video7'), source: 'http://127.0.0.1:5002/videos/7/output.m3u8' },
+            { element: document.getElementById('video8'), source: 'http://127.0.0.1:5002/videos/8/output.m3u8' },
+            { element: document.getElementById('video9'), source: 'http://127.0.0.1:5002/videos/9/output.m3u8' },
+        ];
+
+        // 각 비디오를 스트리밍 시작
+        videos.forEach(function (videoInfo) {
+            startStreaming(videoInfo.element, videoInfo.source);
+        });
+    });
+</script>
 </body>
 </html>
