@@ -80,9 +80,11 @@ curl -X POST -H "Content-Type: application/json" -d '{
 
 curl -X POST -H "Content-Type: application/json" -d '{
     "cameraId": 9,
-    "instanceName": "1-465-02",
+    "instanceName": "1-465-04",
     "ip": "192.168.0.122",
     "port": 8562,
     "command": "start",
     "apiKey": "abc"
 }' http://localhost:5002/api/hls/control &
+
+echo "HLS 변환 요청 성공"
