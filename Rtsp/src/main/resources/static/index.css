@@ -1,0 +1,10 @@
+.video-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px; /* 각 비디오 사이의 간격 조정 가능 */
+}
+
+.video-container video {
+    width: 100%;
+    height: auto;
+}
