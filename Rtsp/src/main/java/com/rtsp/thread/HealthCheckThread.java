@@ -18,8 +18,9 @@ public class HealthCheckThread extends Thread {
     private final RestApiService restApiService;
     private final TaskExecutor executor;
     private final ObjectMapper mapper;
-    private String[] instanceName = {"1-260-01", "1-260-04", "1-294-01", "1-294-02", "1-414-02", "1-414-03", "1-438-02", "1-465-01", "1-465-04"};
-    private String server = "http://192.168.0.122:8080/";
+//    private String[] instanceName = {"1-260-01", "1-260-04", "1-294-01", "1-294-02", "1-414-02", "1-414-03", "1-438-02", "1-465-01", "1-465-04"};
+    private String[] instanceName = {"1-260-01"};
+    private String server = "http://localhost:8080/";
     private static int index = 0;
 
     @PostConstruct
