@@ -55,7 +55,7 @@ ffmpeg:
     hls:
       time: 2
       list:
-        size: 3
+        size: 1
       flags: delete_segments
     start:
       number: 1
