@@ -2,13 +2,11 @@ package com.rtsp.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +29,8 @@ public class StreamingService {
     private String hlsFilePath;
 
     private Map<Integer, Process> processMap = new ConcurrentHashMap();
+
+    private String scriptPath = "script/";
 
     /**
      * FFmpeg 프로세스 시작
@@ -140,5 +140,57 @@ public class StreamingService {
                 }
             }
         });
+    }
+
+    /**
+     * FFmpeg 변환을 수행하는 스크립트 실행
+     */
+    public void startConvert() {
+        // ClassPathResource를 사용하여 스크립트 파일을 가져옵니다.
+        ClassPathResource resource = new ClassPathResource(scriptPath + "start.sh");
+
+        // InputStream으로 스크립트 파일 내용을 읽습니다.
+        try {
+            StringBuilder command = new StringBuilder();
+            command.append("bash ");
+            command.append(resource.getFile().getAbsolutePath());
+
+            // 스크립트 실행 (Linux 및 macOS에서는 /bin/bash를 사용합니다)
+            Process process = Runtime.getRuntime().exec(command.toString());
+
+            // 프로세스가 종료될 때까지 대기
+            int exitCode = process.waitFor();
+
+            // 실행 결과 출력
+            log.info("스크립트 실행 결과: " + exitCode);
+        } catch (IOException | InterruptedException e) {
+            log.error("스크립트 실행 실패 : {}", e.getMessage());
+        }
+    }
+
+    /**
+     * FFmpeg 변환을 수행하는 스크립트 실행
+     */
+    public void stopConvert() {
+        // ClassPathResource를 사용하여 스크립트 파일을 가져옵니다.
+        ClassPathResource resource = new ClassPathResource(scriptPath + "stop.sh");
+
+        // InputStream으로 스크립트 파일 내용을 읽습니다.
+        try {
+            StringBuilder command = new StringBuilder();
+            command.append("bash ");
+            command.append(resource.getFile().getAbsolutePath());
+
+            // 스크립트 실행 (Linux 및 macOS에서는 /bin/bash를 사용합니다)
+            Process process = Runtime.getRuntime().exec(command.toString());
+
+            // 프로세스가 종료될 때까지 대기
+            int exitCode = process.waitFor();
+
+            // 실행 결과 출력
+            log.info("스크립트 실행 결과: " + exitCode);
+        } catch (IOException | InterruptedException e) {
+            log.error("스크립트 실행 실패 : {}", e.getMessage());
+        }
     }
 }
