@@ -6,13 +6,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.File;
 
 @Slf4j
 @RestController
@@ -25,12 +20,14 @@ public class StreamingController {
     private String apiKey;
 
     // org.springframework.core.io.Resource
-    @GetMapping("/stream")
-    public ResponseEntity<Resource> streamHls() {
-        File file = new File("output.m3u8");
-        Resource resource = new FileSystemResource(file);
+    @GetMapping("/start")
+    public void startConvert() {
+        streamingService.startConvert();
+    }
 
-        return ResponseEntity.ok(resource);
+    @GetMapping("/stop")
+    public void stopConvert() {
+        streamingService.stopConvert();
     }
 
     @PostMapping("/control")
