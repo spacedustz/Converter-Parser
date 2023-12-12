@@ -1,6 +1,7 @@
 package com.rtsp.controller;
 
 import com.rtsp.dto.StreamingDto;
+import com.rtsp.service.RestApiService;
 import com.rtsp.service.StreamingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,20 +15,15 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/hls")
 @RequiredArgsConstructor
 public class StreamingController {
+    private final RestApiService restApiService;
     private final StreamingService streamingService;
 
     @Value("${api.key}")
     private String apiKey;
 
-    // org.springframework.core.io.Resource
-    @GetMapping("/start")
-    public void startConvert() {
-        streamingService.startConvert();
-    }
-
-    @GetMapping("/stop")
-    public void stopConvert() {
-        streamingService.stopConvert();
+    @GetMapping("/request")
+    public void startConvert(@RequestParam String ip, @RequestParam String command) {
+        restApiService.requestStreaming(ip, command);
     }
 
     @PostMapping("/control")
@@ -46,7 +42,7 @@ public class StreamingController {
             if (request.getCommand().equalsIgnoreCase("start")) {
                 streamingService.startConverter(request.getCameraId(), request.getInstanceName(), request.getIp(), request.getPort());
             } else if (request.getCommand().equalsIgnoreCase("stop")) {
-                streamingService.stopHlsConverter(request.getCameraId(), request.getInstanceName());
+                streamingService.stopHlsConverter(request.getInstanceName());
             }
         } catch (Exception e) {
             log.error("HLS Controller Exception - {}, {}", e.getMessage(), request.toString());
