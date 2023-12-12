@@ -35,7 +35,7 @@ public class HealthCheckThread extends Thread {
             Arrays.stream(instanceName).forEach(name -> {
                 try {
                     String uri = server + "api/instance/get?instance_name=" + name;
-                    String result = restApiService.getRequest(uri).block();
+                    String result = restApiService.getInstance(uri).block();
                     InstanceDto[] instanceDtoArray = mapper.readValue(result, InstanceDto[].class);
 
                     if (instanceDtoArray != null && instanceDtoArray.length > 0) {
@@ -59,7 +59,7 @@ public class HealthCheckThread extends Thread {
 
                                 try {
                                     String requestBody = mapper.writeValueAsString(reqBody);
-                                    restApiService.postRequest(startUri, requestBody).block();
+                                    restApiService.postInstance(startUri, requestBody).block();
 
                                     log.info("Instance Start - Request Body : {}", requestBody);
                                 } catch (Exception e) {
@@ -69,7 +69,7 @@ public class HealthCheckThread extends Thread {
                         });
                     }
                 } catch (Exception e) {
-                    log.warn("Instance Monitoring with An Exception - {}", e.getMessage());
+                    log.error("Instance Monitoring with An Exception - {}", e.getMessage());
                 }
             });
 
@@ -84,6 +84,7 @@ public class HealthCheckThread extends Thread {
     private void InstanceConnection() {
         executor.execute(() -> {
             HealthCheckThread healthCheckThread = new HealthCheckThread(restApiService, executor, mapper);
+            healthCheckThread.setDaemon(true);
             executor.execute(healthCheckThread);
         });
     }
