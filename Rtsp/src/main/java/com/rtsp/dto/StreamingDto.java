@@ -2,8 +2,9 @@ package com.rtsp.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.Setter;
 
-@Getter
+@Getter @Setter
 public class StreamingDto {
     @NotNull
     private Integer cameraId; // DB에 저장된 CameraID
