@@ -2,13 +2,16 @@ package com.rtsp.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
@@ -28,7 +31,7 @@ public class StreamingService {
     @Value("${hls.file.path}")
     private String hlsFilePath;
 
-    private Map<Integer, Process> processMap = new ConcurrentHashMap();
+    private Map<String, Process> processMap = new ConcurrentHashMap();
 
     private String scriptPath = "script/";
 
@@ -42,10 +45,9 @@ public class StreamingService {
      * @author 신건우
      */
     public void startConverter(final Integer cameraId, final String instanceName, final String ip, final Integer port) throws IOException {
-        Process process = processMap.get(cameraId);
 
         // FFmpeg에 사용할 명령어를 String Builder를 이용해 작성 합니다.
-        if (process == null || !process.isAlive()) {
+        if (!this.isFfmpegProcesRunning(ip.trim(), port, instanceName.trim())) {
             StringBuilder builder = new StringBuilder();
             builder.append("ffmpeg -i rtsp://");
             builder.append(ip);
@@ -57,6 +59,13 @@ public class StreamingService {
             builder.append(" -hls_time ").append(hlsTime);
             builder.append(" -hls_list_size ").append(hlsListSize);
             builder.append(" -hls_flags ").append(hlsFlags);
+            builder.append(" -fflags nobuffer ");
+            builder.append(" -strict experimental ");
+            builder.append(" -avioflags direct");
+            builder.append(" -fflags discardcorrupt ");
+            builder.append(" -flags low_delay ");
+            builder.append(" -segment_time 0.5 ");
+            builder.append(" -segment_wrap 24 ");
             builder.append(" -start_number ").append(startNumber);
             builder.append(" ").append(hlsFilePath).append(cameraId).append(File.separator).append("output.m3u8");
 
@@ -66,29 +75,45 @@ public class StreamingService {
             File file = new File(hlsFilePath + cameraId);
 
             // 파일이 없으면 생성합니다.
-            if (!file.exists()) file.mkdirs();
+            if (!file.exists()) {
+                file.mkdirs();
+            } else  {
+                file.delete();
+
+                try {
+                    Thread.sleep(500L);
+                } catch (Exception e) {
+                    log.warn("FFmpeg Process 실행 Thread Error - {}", e.getMessage());
+                }
+            }
 
             // 명령을 전달하여 프로세스 실행합니다.
-            process = Runtime.getRuntime().exec(cmd);
+            Process process = Runtime.getRuntime().exec(cmd);
 
+            // 프로세스 출력 에러 스트림 리다이렉션
             BufferedReader errorStream = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            AtomicInteger exitCode = new AtomicInteger();
             String line;
-            int exitCode = 0;
+            AtomicBoolean result = new AtomicBoolean(false);
 
             while ((line = errorStream.readLine()) != null) {
-                log.debug(line);
+                log.info(line);
             }
 
-            try {
-                exitCode = process.waitFor();
-            } catch (Exception e) {
-                log.error("Process Wait For Failed - {}", e.getMessage());
-            }
+            CompletableFuture.runAsync(() -> {
+                try {
+                    result.set(process.waitFor(3000L, TimeUnit.MILLISECONDS));
+                    log.warn("FFmpeg process exited with exit code: {}", exitCode);
+                } catch (InterruptedException e) {
+                    log.error("Process Wait For Failed - {}", e.getMessage());
+                }
+            });
 
             // 카메라의 식별자와 프로세스를 Map에 넣습니다.
-            processMap.put(cameraId, process);
+            processMap.put(instanceName, process);
 
             log.info("FFmpeg 변환 프로세스가 시작됩니다. - {}, {}, {}, {}, {}, {}", cameraId, instanceName, ip, port, cmd, process.isAlive());
+//            log.error("Process Map 테스트 : {}", processMap.entrySet().stream().toList().toString());
 
         } else {
             log.debug("FFmpeg 변환 프로세스가 이미 실행 중 입니다.");
@@ -97,33 +122,59 @@ public class StreamingService {
 
     /**
      * FFmpeg 프로세스 종료
-     * @param cameraId
      * @param instanceName
      * @throws IOException
      * @author 신건우
      */
-    public void stopHlsConverter(final Integer cameraId, final String instanceName) throws IOException {
-        Process process = processMap.get(cameraId);
+    public void stopHlsConverter(final String instanceName) throws IOException {
+        Process process = processMap.get(instanceName);
 
-        // 프로세스가 존재하면 종료합니다.
         if (process != null && process.isAlive()) {
             process.destroy();
-            process = null;
+            processMap.remove(instanceName);
+            log.warn("FFmpeg 변환 프로세스가 종료 되었습니다.");
+        } else {
+            log.warn("FFmpeg 변환 프로세스가 실행 중이 아닙니다.");
+        }
+    }
 
-            File file = new File(hlsFilePath + cameraId);
+    /**
+     * FFmpeg Process 실행 체크
+     */
+    private boolean isFfmpegProcesRunning(final String ip, final Integer port, final String instanceName) {
+        boolean isRunning = false;
+        String command = "powershell.exe $currentId = (Get-Process -Id $PID).Id; Get-WmiObject Win32_Process | Where-Object { $_.CommandLine -like '*ffmpeg -i rtsp://" + ip + ":" + port + "/" + instanceName + "*' -and $_.ProcessId -ne $currentId } | Select-Object ProcessId";
 
-            // 파일이 존재하면 제거합니다.
-            if (file.exists()) {
-                file.delete();
+        try {
+            Process process = Runtime.getRuntime().exec(command);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                log.info("FFmpeg Process 실행 중인지 체크 : {}", line);
+
+                if (!line.trim().isEmpty() && line.trim().matches("\\d+")) {
+                    log.info("FFmpeg 실행 중 : {}", line);
+                    isRunning = true;
+                    break;
+                }
             }
 
-            // Map에서 프로세스를 제거합니다.
-            processMap.remove(instanceName);
+            boolean result = false;
 
-            log.info("FFmpeg 변환 프로세스가 종료 되었습니다.");
-        } else {
-            log.info("FFmpeg 변환 프로세스가 실행 중이 아닙니다.");
+            try {
+                result = process.waitFor(3000L, TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                log.warn("FFmpeg 실행 체크 중 에러 : {}", e.getMessage());
+            }
+
+        } catch (Exception e) {
+            log.warn("FFmpeg 실행 체크 중 에러 : {}", e.getMessage());
+            e.printStackTrace();
         }
+
+        return isRunning;
     }
 
     /**
@@ -131,66 +182,18 @@ public class StreamingService {
      */
     @Scheduled(fixedDelayString = "${ffmpeg.check.interval.millis}")
     public void checkProcess() {
+        if (processMap.isEmpty()) {
+            log.warn("Check FFmpeg - 카메라 변환 프로세스가 실행 중이 아닙니다.");
+        }
+
         processMap.forEach((cameraId, process) -> {
             if (process != null) {
                 if (process.isAlive()) {
-                    log.debug("Check FFmpeg - {}번 카메라 변환 프로세스가 실행 중 입니다.", cameraId);
+                    log.info("Check FFmpeg - {}번 카메라 변환 프로세스가 실행 중 입니다. - {}", cameraId, process.info().toString());
                 } else {
-                    log.debug("Check FFmpeg - {}번 카메라 변환 프로세스가 실행 중이 아닙니다.", cameraId);
+                    log.info("Check FFmpeg - {}번 카메라 변환 프로세스가 실행 중이 아닙니다. - {}", cameraId, process.info().toString());
                 }
             }
         });
-    }
-
-    /**
-     * FFmpeg 변환을 수행하는 스크립트 실행
-     */
-    public void startConvert() {
-        // ClassPathResource를 사용하여 스크립트 파일을 가져옵니다.
-        ClassPathResource resource = new ClassPathResource(scriptPath + "start.sh");
-
-        // InputStream으로 스크립트 파일 내용을 읽습니다.
-        try {
-            StringBuilder command = new StringBuilder();
-            command.append("bash ");
-            command.append(resource.getFile().getAbsolutePath());
-
-            // 스크립트 실행 (Linux 및 macOS에서는 /bin/bash를 사용합니다)
-            Process process = Runtime.getRuntime().exec(command.toString());
-
-            // 프로세스가 종료될 때까지 대기
-            int exitCode = process.waitFor();
-
-            // 실행 결과 출력
-            log.info("스크립트 실행 결과: " + exitCode);
-        } catch (IOException | InterruptedException e) {
-            log.error("스크립트 실행 실패 : {}", e.getMessage());
-        }
-    }
-
-    /**
-     * FFmpeg 변환을 수행하는 스크립트 실행
-     */
-    public void stopConvert() {
-        // ClassPathResource를 사용하여 스크립트 파일을 가져옵니다.
-        ClassPathResource resource = new ClassPathResource(scriptPath + "stop.sh");
-
-        // InputStream으로 스크립트 파일 내용을 읽습니다.
-        try {
-            StringBuilder command = new StringBuilder();
-            command.append("bash ");
-            command.append(resource.getFile().getAbsolutePath());
-
-            // 스크립트 실행 (Linux 및 macOS에서는 /bin/bash를 사용합니다)
-            Process process = Runtime.getRuntime().exec(command.toString());
-
-            // 프로세스가 종료될 때까지 대기
-            int exitCode = process.waitFor();
-
-            // 실행 결과 출력
-            log.info("스크립트 실행 결과: " + exitCode);
-        } catch (IOException | InterruptedException e) {
-            log.error("스크립트 실행 실패 : {}", e.getMessage());
-        }
     }
 }
